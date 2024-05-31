@@ -37,7 +37,7 @@ describe('withAutoCache', () => {
         ttl: 60,
       },
       methodB: {
-        ttl: (result) => Number(result.value) * 2,
+        ttl: (result) => (result.error ? 999 : Number(result.value) * 2),
       },
       methodC: {
         after: jest.fn(),
@@ -45,6 +45,10 @@ describe('withAutoCache', () => {
     };
 
     proxy = withAutoCache(target, cache, methodOptions);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('noCache', () => {
@@ -69,11 +73,11 @@ describe('withAutoCache', () => {
 
   it('should call the original method if no cache is configured', async () => {
     // Arrange
-    const arg = 'world';
-    const expectedValue = `Hello ${arg}`;
+    const arg = 25;
+    const expectedValue = 100;
 
     // Act
-    const result = await proxy.methodA(arg);
+    const result = await proxy.methodD(arg);
 
     // Assert
     expect(result).toBe(expectedValue);
@@ -129,7 +133,7 @@ describe('withAutoCache', () => {
   it('should call the after function if provided', async () => {
     // Arrange
     const arg = 5;
-    const expectedValue = arg * 2;
+    const expectedValue = arg * 3;
     (cache.get as jest.Mock).mockResolvedValue(null);
 
     // Act
@@ -140,15 +144,18 @@ describe('withAutoCache', () => {
     expect(methodOptions.methodC?.after).toHaveBeenCalled();
   });
 
-  it('should throw an error if the original method throws', async () => {
+  it('should cache then throw an error if the original method throws and the ttl function is set to also save errors', async () => {
     // Arrange
-    const arg = 'error';
+    const arg = 123;
     const error = new Error('Test error');
-    target.methodA = jest.fn().mockRejectedValue(error);
+    target.methodB = jest.fn().mockRejectedValue(error);
 
-    // Act & Assert
-    await expect(proxy.methodA(arg)).rejects.toThrow(error);
-    expect(cache.set).toHaveBeenCalledWith(expect.any(String), { error });
+    // Act
+    const promise = proxy.methodB(arg);
+
+    // Assert
+    await expect(promise).rejects.toThrow(error);
+    expect(cache.set).toHaveBeenCalledWith(expect.any(String), { error }, 999);
   });
 
   it('should cache the result if the original method succeeds', async () => {
@@ -162,7 +169,7 @@ describe('withAutoCache', () => {
 
     // Assert
     expect(result).toBe(expectedValue);
-    expect(cache.set).toHaveBeenCalledWith(expect.any(String), { value: expectedValue });
+    expect(cache.set).toHaveBeenCalledWith(expect.any(String), { value: expectedValue }, 60);
   });
 
   it('should prevent multiple calls to the same method with the same arguments', async () => {
