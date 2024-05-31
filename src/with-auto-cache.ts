@@ -1,22 +1,15 @@
-import {
-  AutoCache,
-  AutoCacheMethodOptions,
-  AutoCacheMethods,
-} from './auto-cache';
+import { AutoCache, AutoCacheMethodOptions, AutoCacheMethods } from './auto-cache';
 import { CacheInterface } from './interfaces';
 import { Result } from './result-cache';
 
-export type PossiblyCachedResult<TValue, TError = any> = Result<
-  TValue,
-  TError
-> & {
+export type PossiblyCachedResult<TValue, TError = any> = Result<TValue, TError> & {
   cached: boolean;
 };
 
 export type WithAutoCacheMethodOptions<
   TTarget extends object,
   TFunction extends (...args: any) => Promise<TReturn>,
-  TReturn
+  TReturn,
 > = Omit<AutoCacheMethodOptions<TFunction, TReturn>, 'ttl'> & {
   ttl?: AutoCacheMethodOptions<TFunction, TReturn>['ttl'];
 
@@ -41,19 +34,16 @@ export type WithAutoCache<TTarget extends object> = {
 export function withAutoCache<TTarget extends object>(
   target: TTarget,
   cache: CacheInterface<unknown>,
-  methodOptions: WithAutoCacheMethods<TTarget>
+  methodOptions: WithAutoCacheMethods<TTarget>,
 ) {
   // Filters the methods that have ttl defined to configure the AutoCache
-  const autoCacheOptions = Object.getOwnPropertyNames(methodOptions).reduce(
-    (acc, key) => {
-      const opts = methodOptions[key];
-      if (opts.ttl) {
-        acc[key] = opts;
-      }
-      return acc;
-    },
-    {} as AutoCacheMethods<TTarget>
-  );
+  const autoCacheOptions = Object.getOwnPropertyNames(methodOptions).reduce((acc, key) => {
+    const opts = methodOptions[key];
+    if (opts.ttl) {
+      acc[key] = opts;
+    }
+    return acc;
+  }, {} as AutoCacheMethods<TTarget>);
 
   const autoCache = new AutoCache(target, cache, autoCacheOptions);
 
@@ -61,44 +51,35 @@ export function withAutoCache<TTarget extends object>(
   const upstreamCallCache = new Map<string, Promise<any>>();
 
   const proxy = new Proxy(target, {
-    get(target, prop, receiver) {
-      const origMethod = target[prop];
+    get(targetObject, prop, receiver) {
+      const origMethod = targetObject[prop];
 
       // Returning values that will make the target adhere to the WithAutoCache type
       if (prop === 'noCache') {
-        return target;
+        return targetObject;
       }
       if (prop === 'autoCache') {
         return autoCache;
       }
 
       // Check if the property needs to be wrapped
-      const needsToWrap =
-        typeof prop === 'string' &&
-        Object.getOwnPropertyNames(methodOptions).includes(prop);
+      const needsToWrap = typeof prop === 'string' && Object.getOwnPropertyNames(methodOptions).includes(prop);
 
       // Get the cache for the method
       const methodCache = autoCache.methods.get(prop as keyof TTarget);
 
       // If the property is a method that has cache options, we will wrap it
       if (typeof origMethod !== 'function' || !needsToWrap) {
-        return Reflect.get(target, prop, receiver);
+        return Reflect.get(targetObject, prop, receiver);
       }
 
-      const propOptions = methodOptions[prop] as WithAutoCacheMethodOptions<
-        TTarget,
-        any,
-        any
-      >;
+      const propOptions = methodOptions[prop] as WithAutoCacheMethodOptions<TTarget, any, any>;
 
       return async function (...args: Parameters<TTarget[never]>) {
-        const after = async (
-          result: PossiblyCachedResult<unknown>,
-          ...args: unknown[]
-        ) => {
+        const after = async (result: PossiblyCachedResult<unknown>, ...originalArgs: unknown[]) => {
           const afterFn = propOptions.after;
           if (afterFn) {
-            await afterFn.call(autoCache, result, ...args);
+            await afterFn.call(autoCache, result, ...originalArgs);
           }
         };
 
@@ -130,17 +111,15 @@ export function withAutoCache<TTarget extends object>(
         }
 
         // Defining the function that will load the data from the upstream
-        const loadFromUpstream = async (
-          ...args: Parameters<TTarget[never]>
-        ) => {
+        const loadFromUpstream = async (...originalArgs: Parameters<TTarget[never]>) => {
           try {
-            const value = await origMethod.apply(this, args);
-            await methodCache.set({ value }, ...args);
-            await after({ value, cached: false }, ...args);
+            const value = await origMethod.apply(this, originalArgs);
+            await methodCache.set({ value }, ...originalArgs);
+            await after({ value, cached: false }, ...originalArgs);
             return value;
           } catch (error) {
-            await methodCache.set({ error }, ...args);
-            await after({ error, cached: false }, ...args);
+            await methodCache.set({ error }, ...originalArgs);
+            await after({ error, cached: false }, ...originalArgs);
             throw error;
           }
         };

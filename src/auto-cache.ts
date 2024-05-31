@@ -27,6 +27,10 @@ export class AutoCache<TTarget extends object> {
     const targetName = target.constructor.name;
 
     for (const method in methodOptions) {
+      if (!methodOptions.hasOwnProperty(method)) {
+        continue;
+      }
+
       const originalOpts = methodOptions[method];
       const opts = {
         ...originalOpts,

@@ -76,10 +76,10 @@ describe('AutoCache', () => {
     it('should validate ttl if it is a function', () => {
       // Arrange
       const validateTtlSpy = jest.spyOn(AutoCache.prototype as any, 'validateTtl');
-      const autoCache = new AutoCache(target, cache, methodOptions);
+      const sut = new AutoCache(target, cache, methodOptions);
 
       // Act
-      autoCache.for('methodB').set({ value: 123 }, 'test');
+      sut.for('methodB').set({ value: 123 }, 'test');
 
       // Assert
       expect(validateTtlSpy).toHaveBeenCalledWith(60, undefined);
