@@ -42,7 +42,9 @@ export class ResultCache<TFunction extends (...args) => any, TReturn> {
     const key = this.buildKey(...args);
     const result = await this.cache.get(key);
 
-    ResultCache.logger.createScope({ result: JSON.stringify(result) }).debug('Loaded key ${key} from cache', key);
+    ResultCache.logger
+      .createScope({ result: JSON.stringify(result) })
+      .debug(result ? 'Loaded key ${key} from cache' : 'Key ${key} not found in cache', key);
 
     return result;
   }
