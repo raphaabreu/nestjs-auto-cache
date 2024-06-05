@@ -43,8 +43,8 @@ export class ResultCache<TFunction extends (...args) => any, TReturn> {
     const result = await this.cache.get(key);
 
     ResultCache.logger
-      .createScope({ result: JSON.stringify(result) })
-      .debug(result ? 'Loaded key ${key} from cache' : 'Key ${key} not found in cache', key);
+      .createScope({ cacheResult: JSON.stringify(result) })
+      .debug('Key ${cacheKey} ${cacheStatus}', key, result ? 'HIT' : 'MISS');
 
     return result;
   }
@@ -62,14 +62,14 @@ export class ResultCache<TFunction extends (...args) => any, TReturn> {
     await this.cache.set(key, result, ttl);
 
     ResultCache.logger
-      .createScope({ result: JSON.stringify(result) })
-      .debug('Saved key ${key} to cache with ttl ${ttl}', key, ttl);
+      .createScope({ cacheResult: JSON.stringify(result), cacheTtl: ttl })
+      .debug('Key ${cacheKey} ${cacheStatus}', key, 'SET');
   }
 
   public async remove(...args: Parameters<TFunction>) {
     const key = this.buildKey(...args);
     await this.cache.remove(key);
-    ResultCache.logger.debug('Removed key ${key} from cache', key);
+    ResultCache.logger.debug('Key ${cacheKey} ${cacheStatus}', key, 'REMOVED');
   }
 
   private calculateTtl(result: Result<TReturn>): number {
