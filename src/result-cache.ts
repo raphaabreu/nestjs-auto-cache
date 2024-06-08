@@ -27,11 +27,10 @@ export type ResultCacheEvents<TReturn> = {
 };
 
 export class ResultCache<TFunction extends (...args) => any, TReturn> {
-  private static logger = new StructuredLogger(ResultCache.name);
-
   constructor(
     private readonly cache: CacheInterface<Result<TReturn>>,
     private readonly options: ResultCacheOptions<TFunction, TReturn>,
+    private readonly logger = new StructuredLogger(ResultCache.name),
   ) {}
 
   public buildKey(...args: Parameters<TFunction>) {
@@ -42,9 +41,9 @@ export class ResultCache<TFunction extends (...args) => any, TReturn> {
     const key = this.buildKey(...args);
     const result = await this.cache.get(key);
 
-    ResultCache.logger
-      .createScope({ cacheResult: JSON.stringify(result) })
-      .debug('Key ${cacheKey} ${cacheStatus}', key, result ? 'HIT' : 'MISS');
+    this.logger
+      ?.createScope({ cacheResult: stringifyAndTruncate(result) })
+      ?.debug('Key ${cacheStatus}: ${cacheKey}', result ? 'hit' : 'miss', key);
 
     return result;
   }
@@ -61,15 +60,15 @@ export class ResultCache<TFunction extends (...args) => any, TReturn> {
 
     await this.cache.set(key, result, ttl);
 
-    ResultCache.logger
-      .createScope({ cacheResult: JSON.stringify(result), cacheTtl: ttl })
-      .debug('Key ${cacheKey} ${cacheStatus}', key, 'SET');
+    this.logger
+      ?.createScope({ cacheResult: stringifyAndTruncate(result), cacheTtl: ttl })
+      ?.debug('Key ${cacheStatus}: ${cacheKey}', 'set', key);
   }
 
   public async remove(...args: Parameters<TFunction>) {
     const key = this.buildKey(...args);
     await this.cache.remove(key);
-    ResultCache.logger.debug('Key ${cacheKey} ${cacheStatus}', key, 'REMOVED');
+    this.logger?.debug('Key ${cacheStatus}: ${cacheKey}', 'removed', key);
   }
 
   private calculateTtl(result: Result<TReturn>): number {
@@ -83,4 +82,19 @@ export class ResultCache<TFunction extends (...args) => any, TReturn> {
 
     return this.options.ttl;
   }
+}
+
+function stringifyAndTruncate(value: any) {
+  const maxLength = 100;
+  const stringValue = JSON.stringify(value);
+
+  if (!stringValue) {
+    return stringValue;
+  }
+
+  if (stringValue.length <= maxLength) {
+    return stringValue;
+  }
+
+  return stringValue.slice(0, maxLength) + '(truncated)';
 }

@@ -1,3 +1,4 @@
+import { StructuredLogger } from '@raphaabreu/nestjs-opensearch-structured-logger';
 import { CacheInterface, TargetMethod, UnwrapPromise } from './interfaces';
 import { ResultCache, ResultCacheOptions } from './result-cache';
 
@@ -53,7 +54,13 @@ export class AutoCache<TTarget extends object> {
         };
       }
 
-      this.methods.set(method, new ResultCache(cache, opts));
+      const resultCache = new ResultCache(
+        cache,
+        opts,
+        new StructuredLogger(`${AutoCache.name}:${targetName}:${method}`),
+      );
+
+      this.methods.set(method, resultCache);
     }
   }
 
