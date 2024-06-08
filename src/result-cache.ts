@@ -85,7 +85,7 @@ export class ResultCache<TFunction extends (...args) => any, TReturn> {
 }
 
 function stringifyAndTruncate(value: any) {
-  const maxLength = 100;
+  const maxLength = 512;
   const stringValue = JSON.stringify(value);
 
   if (!stringValue) {
