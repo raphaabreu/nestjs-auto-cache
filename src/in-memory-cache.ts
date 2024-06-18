@@ -2,7 +2,7 @@ import { parse, stringify } from 'flatted';
 import { CacheInterface } from './interfaces';
 import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 
-export class InMemoryCache<T> implements CacheInterface<T>, OnModuleInit, OnModuleDestroy {
+export class InMemoryCache<T = unknown> implements CacheInterface<T>, OnModuleInit, OnModuleDestroy {
   private cache: Map<string, { value: string; expiresAt: number }>;
   private cleanupInterval: NodeJS.Timeout;
 

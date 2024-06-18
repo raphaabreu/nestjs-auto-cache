@@ -11,6 +11,14 @@ export type WithAutoCacheMethodOptions<
   TFunction extends (...args: any) => Promise<TReturn>,
   TReturn,
 > = Omit<AutoCacheMethodOptions<TFunction, TReturn>, 'ttl'> & {
+  /**
+   * Time to live in seconds for the cache entry. If a function is provided, it will be called with the result of the function call.
+   *
+   * Possible returns:
+   * * positive number: the cache entry will expire in the given number of seconds
+   * * zero: the cache entry will not expire
+   * * negative number: the cache entry will not be stored
+   */
   ttl?: AutoCacheMethodOptions<TFunction, TReturn>['ttl'];
 
   after?(
