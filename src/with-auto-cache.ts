@@ -111,8 +111,8 @@ export function withAutoCache<TTarget extends object>(
         }
 
         // Checking if there is a call in progress
-        const key = methodCache.buildKey(...args);
-        const cachedCall = upstreamCallCache.get(key);
+        const upstreamCallCacheKey = `${prop}@${methodCache.buildKey(...args)}`;
+        const cachedCall = upstreamCallCache.get(upstreamCallCacheKey);
         if (cachedCall) {
           // If there is a call in progress, we will wait for it to finish
           return await cachedCall;
@@ -136,12 +136,12 @@ export function withAutoCache<TTarget extends object>(
         try {
           const call = loadFromUpstream(...args);
           // We need to store the call in the cache to prevent multiple calls with the same arguments
-          upstreamCallCache.set(key, call);
+          upstreamCallCache.set(upstreamCallCacheKey, call);
           const result = await call;
           return result;
         } finally {
           // After the call is finished, we need to remove it from the cache
-          upstreamCallCache.delete(key);
+          upstreamCallCache.delete(upstreamCallCacheKey);
         }
       };
     },

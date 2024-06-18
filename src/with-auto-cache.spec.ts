@@ -22,6 +22,14 @@ describe('withAutoCache', () => {
       async methodD(arg: number): Promise<number> {
         return arg * 4;
       },
+      async methodE(arg: number): Promise<number> {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return arg * 5;
+      },
+      async methodF(arg: number): Promise<number> {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return arg * 6;
+      },
 
       propA: 'propA',
     };
@@ -41,6 +49,14 @@ describe('withAutoCache', () => {
       },
       methodC: {
         after: jest.fn(),
+      },
+      methodE: {
+        ttl: 120,
+        buildKey: (arg: number) => `${arg}`,
+      },
+      methodF: {
+        ttl: 120,
+        buildKey: (arg: number) => `${arg}`,
       },
     };
 
@@ -187,6 +203,24 @@ describe('withAutoCache', () => {
     await expect(promise1).resolves.toBe(expectedValue);
     await expect(promise2).resolves.toBe(expectedValue);
     expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not prevent multiple calls to the different methods with the same arguments', async () => {
+    // Arrange
+    const arg = 10;
+    (cache.get as jest.Mock).mockResolvedValue(null);
+    const methodESpy = jest.spyOn(target, 'methodE');
+    const methodFSpy = jest.spyOn(target, 'methodF');
+
+    // Act
+    const promise1 = proxy.methodE(arg);
+    const promise2 = proxy.methodF(arg);
+
+    // Assert
+    await expect(promise1).resolves.toBe(50);
+    await expect(promise2).resolves.toBe(60);
+    expect(methodESpy).toHaveBeenCalledTimes(1);
+    expect(methodFSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should not proxy properties', () => {
