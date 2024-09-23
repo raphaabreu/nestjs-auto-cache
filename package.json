@@ -1,6 +1,6 @@
 {
   "name": "@raphaabreu/nestjs-auto-cache",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Utility that simplifies caching in NestJS applications",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -40,9 +40,9 @@
   },
   "peerDependencies": {
     "@nestjs/common": ">=8.0.0",
-    "@raphaabreu/nestjs-opensearch-structured-logger": "^0.2.7"
+    "@raphaabreu/nestjs-opensearch-structured-logger": ">=0.2.7"
   },
   "dependencies": {
-    "flatted": "^3.3.1"
+    "flatted": ">=3.3.1"
   }
 }
