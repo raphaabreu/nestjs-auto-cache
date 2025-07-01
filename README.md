@@ -134,6 +134,39 @@ export class QueryService {
 }
 ```
 
+## Using NodeCacheAdapter
+
+`NodeCacheAdapter` is an in-memory cache implementation based on the popular [node-cache](https://www.npmjs.com/package/node-cache) library. It implements the `CacheInterface` and can be used as a drop-in replacement for `InMemoryCache`.
+
+### Installation
+
+`node-cache` is an optional dependency. If you want to use `NodeCacheAdapter`, install it:
+
+```bash
+npm install node-cache
+```
+
+### Usage Example
+
+```typescript
+import { NodeCacheAdapter } from '@raphaabreu/nestjs-auto-cache';
+import NodeCache from 'node-cache';
+
+// Create and configure your NodeCache instance
+const nodeCache = new NodeCache({ stdTTL: 100, checkperiod: 120 });
+
+// Pass it to the adapter
+const cache = new NodeCacheAdapter(nodeCache);
+
+await cache.set('key', 'value', 60); // cache for 60 seconds
+const value = await cache.get('key');
+await cache.remove('key');
+```
+
+This approach gives you full control over the NodeCache configuration and ensures type safety.
+
+You can use `NodeCacheAdapter` anywhere a `CacheInterface` is expected, including with `withAutoCache` and other utilities in this package.
+
 ## Tests
 
 To run the provided unit tests just execute `npm run tests`.
